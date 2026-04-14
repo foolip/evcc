@@ -18,17 +18,12 @@ params:
     advanced: true
 render: |
   type: custom
-  # Diagnostic findings for SAJ H2:
-  # 1. SOC: The previous register 0xA00C returned 0. Correct SOC is at 0x406F (wire address).
-  # 2. Grid Power & Currents Layout: The Smart Meter block starting at 0x408D (wire address)
-  #    is interleaved: V1 (0x408D), I1 (0x408E), F1 (0x408F), P1 (0x4090), V2 (0x4091), P2 (0x4092),
-  #    V3 (0x4093), P3 (0x4094).
-  # 3. Calculation Choice: Since direct currents (I) are missing for Phase 2 & 3 in this block,
-  #    all phase currents are derived via (Power / Voltage). This ensures mathematical
-  #    consistency (A * V = W) across all phases for load management.
-  # 4. Grid Power: Register 0x40AC only shows inverter residual power. Real house grid power
-  #    is the sum of phase powers (P1+P2+P3).
-  # 5. Addressing: Offsets confirmed via 0-based wire addresses (matching mbpoll -r [addr+1]).
+  # The register addresses were determined through a combination of studying
+  # https://github.com/stanus74/home-assistant-saj-h2-modbus/blob/main/custom_components/saj_h2_modbus/modbus_readers.py
+  # and independent empirical testing of which registers change in response to changes in solar
+  # production, etc. Where the registers match home-assistant-saj-h2-modbus it is followed by a
+  # comment giving the name in its modbus_readers.py, and in other cases the testing done is
+  # explained in a comment.
   {{- if eq .usage "grid" }}
   power:
     source: calc
@@ -38,23 +33,23 @@ render: |
       source: modbus
       {{- include "modbus" . | indent 6 }}
       register:
-        address: 0x4090 # RGridPower
+        address: 0x4090 # ROnGridOutPowerWatt
         type: holding
-        decode: int16
+        decode: uint16
     - name: p2
       source: modbus
       {{- include "modbus" . | indent 6 }}
       register:
-        address: 0x4092 # SGridPower
+        address: 0x4092 # SOnGridOutPowerWatt
         type: holding
-        decode: int16
+        decode: uint16
     - name: p3
       source: modbus
       {{- include "modbus" . | indent 6 }}
       register:
-        address: 0x4094 # TGridPower
+        address: 0x4094 # TOnGridOutPowerWatt
         type: holding
-        decode: int16
+        decode: uint16
   currents:
   - source: calc
     expr: p / v
@@ -63,14 +58,14 @@ render: |
       source: modbus
       {{- include "modbus" . | indent 6 }}
       register:
-        address: 0x4090 # RGridPower
+        address: 0x4090 # ROnGridOutPowerWatt
         type: holding
-        decode: int16
+        decode: uint16
     - name: v
       source: modbus
       {{- include "modbus" . | indent 6 }}
       register:
-        address: 0x408D # RGridVolt
+        address: 0x408D # ROnGridOutVolt
         type: holding
         decode: uint16
       scale: 0.1
@@ -81,14 +76,14 @@ render: |
       source: modbus
       {{- include "modbus" . | indent 6 }}
       register:
-        address: 0x4092 # SGridPower
+        address: 0x4092 # SOnGridOutPowerWatt
         type: holding
-        decode: int16
+        decode: uint16
     - name: v
       source: modbus
       {{- include "modbus" . | indent 6 }}
       register:
-        address: 0x4091 # SGridVolt
+        address: 0x4091 # SOnGridOutVolt
         type: holding
         decode: uint16
       scale: 0.1
@@ -99,39 +94,53 @@ render: |
       source: modbus
       {{- include "modbus" . | indent 6 }}
       register:
-        address: 0x4094 # TGridPower
+        address: 0x4094 # TOnGridOutPowerWatt
         type: holding
-        decode: int16
+        decode: uint16
     - name: v
       source: modbus
       {{- include "modbus" . | indent 6 }}
       register:
-        address: 0x4093 # TGridVolt
+        address: 0x4093 # TOnGridOutVolt
         type: holding
         decode: uint16
       scale: 0.1
+  # FIXME: 0x40FD is 0 on HS3
   energy:
     source: modbus
     {{- include "modbus" . | indent 2 }}
     register:
-      address: 0x40FD # Total_FeedInEnergy
+      address: 0x40FD # feedin_total_energy
       type: holding
       decode: uint32
     scale: 0.01
   {{- end }}
   {{- if eq .usage "pv" }}
+  # FIXME: 0x40A5 and 0x40A3 are zero on HS3
   power:
-    source: modbus
-    {{- include "modbus" . | indent 2 }}
-    register:
-      address: 0x40A4 # TotalPVPower
-      type: holding
-      decode: int16
+    source: calc
+    expr: mppt + ac_coupled
+    args:
+    - name: mppt
+      source: modbus
+      {{- include "modbus" . | indent 6 }}
+      register:
+        address: 0x40A5 # pvPower
+        type: holding
+        decode: int16
+    - name: ac_coupled
+      source: modbus
+      {{- include "modbus" . | indent 6 }}
+      register:
+        address: 0x40A3 # CT_PVPowerWatt
+        type: holding
+        decode: int16
+  # FIXME: 0x40C5 is 0 on HS3
   energy:
     source: modbus
     {{- include "modbus" . | indent 2 }}
     register:
-      address: 0x40C5 # Total_PVEnergy
+      address: 0x40C5 # totalenergy
       type: holding
       decode: uint32
     scale: 0.01
@@ -141,14 +150,15 @@ render: |
     source: modbus
     {{- include "modbus" . | indent 2 }}
     register:
-      address: 0x40A6 # TotalBatteryPower
+      address: 0x40A6 # batteryPower
       type: holding
       decode: int16
+  # FIXME: 0x40D5 is 0 on HS3
   energy:
     source: modbus
     {{- include "modbus" . | indent 2 }}
     register:
-      address: 0x40D5 # Total_BatDisEnergy
+      address: 0x40D5 # bat_total_discharge
       type: holding
       decode: uint32
     scale: 0.01
@@ -156,7 +166,7 @@ render: |
     source: modbus
     {{- include "modbus" . | indent 2 }}
     register:
-      address: 0x406F # BatEnergyPercent
+      address: 0x406F # batEnergyPercent
       type: holding
       decode: uint16
     scale: 0.01
@@ -226,7 +236,7 @@ render: |
             source: modbus
             {{- include "modbus" . | indent 10 }}
             register:
-              address: 13828 # Charge_time_enable_control
+              address: 13828 # charge_time_enable
               type: writeholding
               decode: int16
         - source: const
@@ -235,7 +245,7 @@ render: |
             source: modbus
             {{- include "modbus" . | indent 10 }}
             register:
-              address: 13830 # First_charge_start_time
+              address: 13830 # charge_start_time
               type: writeholding
               decode: int16
         - source: const
@@ -244,7 +254,7 @@ render: |
             source: modbus
             {{- include "modbus" . | indent 10 }}
             register:
-              address: 13831 # First_charge_end_time
+              address: 13831 # charge_end_time
               type: writeholding
               decode: int16
         - source: const
@@ -253,7 +263,7 @@ render: |
             source: modbus
             {{- include "modbus" . | indent 10 }}
             register:
-              address: 13832 # First_charge_power_time
+              address: 13832 # charge_power_raw
               type: writeholding
               decode: int16
   {{- include "battery-params" . }}
