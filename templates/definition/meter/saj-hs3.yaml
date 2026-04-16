@@ -183,7 +183,7 @@ render: |
             source: modbus
             {{- include "modbus" . | indent 10 }}
             register:
-              address: 13895 # AppMode
+              address: 0x3647 # AppMode
               type: writeholding
               decode: int16
         - source: const
@@ -192,7 +192,7 @@ render: |
             source: modbus
             {{- include "modbus" . | indent 10 }}
             register:
-              address: 13905 # BatSocLimitkeep
+              address: 0x3651 # TODO: verify
               type: writeholding
               decode: int16
     - case: 2 # hold
@@ -205,7 +205,7 @@ render: |
             source: modbus
             {{- include "modbus" . | indent 10 }}
             register:
-              address: 13895 # AppMode
+              address: 0x3647 # AppMode
               type: writeholding
               decode: int16
         - source: const
@@ -214,7 +214,7 @@ render: |
             source: modbus
             {{- include "modbus" . | indent 10 }}
             register:
-              address: 13905 # BatSocLimitkeep
+              address: 0x3651 # TODO: verify
               type: writeholding
               decode: int16
     - case: 3 # charge
@@ -227,7 +227,7 @@ render: |
             source: modbus
             {{- include "modbus" . | indent 10 }}
             register:
-              address: 13895 # AppMode
+              address: 0x3647 # AppMode
               type: writeholding
               decode: int16
         - source: const
@@ -236,7 +236,7 @@ render: |
             source: modbus
             {{- include "modbus" . | indent 10 }}
             register:
-              address: 13828 # charge_time_enable
+              address: 0x3604 # charge_time_enable
               type: writeholding
               decode: int16
         - source: const
@@ -245,7 +245,7 @@ render: |
             source: modbus
             {{- include "modbus" . | indent 10 }}
             register:
-              address: 13830 # charge_start_time
+              address: 0x3606 # charge_start_time
               type: writeholding
               decode: int16
         - source: const
@@ -254,7 +254,7 @@ render: |
             source: modbus
             {{- include "modbus" . | indent 10 }}
             register:
-              address: 13831 # charge_end_time
+              address: 0x3607 # charge_end_time
               type: writeholding
               decode: int16
         - source: const
@@ -263,7 +263,7 @@ render: |
             source: modbus
             {{- include "modbus" . | indent 10 }}
             register:
-              address: 13832 # charge_power_raw
+              address: 0x3608 # charge_power_raw
               type: writeholding
               decode: int16
   {{- include "battery-params" . }}
