@@ -123,7 +123,7 @@ render: |
     source: modbus
     {{- include "modbus" . | indent 2 }}
     register:
-      address: 0x40A6 # batteryPower
+      address: 0x40A6 # also in 0x51B6 as int32
       type: holding
       decode: int16
   # FIXME: 0x40D5 is 0 on HS3
@@ -139,7 +139,7 @@ render: |
     source: modbus
     {{- include "modbus" . | indent 2 }}
     register:
-      address: 0x406F # batEnergyPercent
+      address: 0x406F # also in 0x51B8
       type: holding
       decode: uint16
     scale: 0.01
