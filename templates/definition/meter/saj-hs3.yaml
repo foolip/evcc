@@ -113,7 +113,7 @@ render: |
     source: modbus
     {{- include "modbus" . | indent 2 }}
     register:
-      address: 0x427B # also at 0x421B but not exactly the same value
+      address: 0x427B # also at 0x421B as a slightly larger value.
       type: holding
       decode: uint32
     scale: 0.01
