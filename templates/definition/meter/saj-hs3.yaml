@@ -126,12 +126,11 @@ render: |
       address: 0x40A6 # also in 0x51B6 as int32
       type: holding
       decode: int16
-  # FIXME: 0x40D5 is 0 on HS3
   energy:
     source: modbus
     {{- include "modbus" . | indent 2 }}
     register:
-      address: 0x40D5 # bat_total_discharge
+      address: 0x40D5
       type: holding
       decode: uint32
     scale: 0.01
